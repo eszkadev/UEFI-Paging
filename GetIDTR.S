@@ -2,7 +2,7 @@
 .globl GetIDTR
 GetIDTR:
 
-mov 0x0, %eax
+mov 4(%esp), %eax
 sidt (%eax)
 
 ret

@@ -11,6 +11,7 @@
   EnablePaging.S
   GetIDTR.S
   GetCR2.S
+  GetCS.S
   PageFaultHandler.S
   SetPageDirectory.S
 

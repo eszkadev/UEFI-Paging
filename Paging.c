@@ -13,6 +13,7 @@ Author: Szymon Kłos
 #define TABLES 1024
 #define PAGING_START_ADDR 0
 
+#define IDT_TYPE 0x8E
 #define IDT_PAGE_FAULT_OFFSET 0x0E
 
 // RW, SUPERVISOR, NOT PRESENT
@@ -44,8 +45,9 @@ TABLE 1 |
 
 extern void SetPageDirectory(UINT32*);
 extern void EnablePaging();
-extern void* GetIDTR();
+extern void GetIDTR(void*);
 extern UINT32 GetCR2();
+extern UINT32 GetCS();
 extern void PageFaultHandler();
 
 enum
@@ -141,8 +143,7 @@ VOID MapAddressIdent( IN UINT32 address, IN UINT16 flags, IN UINT32* table, IN U
 	}
 }
 
-VOID
-SetNotPresent( IN UINT32 linear, IN UINT32* page_directory )
+VOID SetNotPresent( IN UINT32 linear, IN UINT32* page_directory )
 {
 	UINT32 PDI = linear >> 22;
 
@@ -293,7 +294,7 @@ VOID PrintIDTEntry( IN EFI_SYSTEM_TABLE *SystemTable, IN UINT64* address )
 	SystemTable->ConOut->OutputString(SystemTable->ConOut, String);
 }
 
-VOID SetIDTEntryOffset( IN EFI_SYSTEM_TABLE *SystemTable, IN UINT64* address, IN UINT32* pointer )
+VOID SetIDTEntryOffset( IN EFI_SYSTEM_TABLE *SystemTable, IN UINT64* address, IN UINT32* pointer, IN UINT8 type, IN UINT16 selector )
 {
 	UINT16 off1 = (UINT32)pointer;
 	UINT16 off2 = (UINT32)pointer >> 16;
@@ -304,6 +305,14 @@ VOID SetIDTEntryOffset( IN EFI_SYSTEM_TABLE *SystemTable, IN UINT64* address, IN
 
 	entry |= off1;
 	entry |= (UINT64)off2 << 48;
+
+	entry &= ~(((UINT64)0xff) << 32); // zero
+
+	entry &= ~(((UINT64)0xff) << 40); // type
+	entry |= (UINT64)type << 40;
+
+	entry &= ~(((UINT64)0xffff) << 16); // selector
+	entry |= (UINT64)selector << 16;
 
 	*address = entry;
 }
@@ -374,17 +383,19 @@ EFI_STATUS EFIAPI UefiMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *Syste
 	PrintHelp(SystemTable);
 
 	// get idt table info
-	UINT8* idtr = GetIDTR();
+	UINT64 idtr_value = 0;
+	UINT8* idtr = (UINT8*)&idtr_value;
+	GetIDTR(idtr);
+
 	idtr += 2; // length field
 	UINT32 idt = *((UINT32*)idtr);
 
+	UINT32 cs = GetCS();
+
 	// set new page fault handler
-	UINT64* idt_entry = (UINT64*)idt;
-	PrintIDTEntry(SystemTable, idt_entry + IDT_PAGE_FAULT_OFFSET);
+	UINT64* idt_entry = (UINT64*)idt + IDT_PAGE_FAULT_OFFSET;
 
-	SetIDTEntryOffset(SystemTable, idt_entry + IDT_PAGE_FAULT_OFFSET, (UINT32*)PageFaultHandler);
-
-	PrintIDTEntry(SystemTable, idt_entry + IDT_PAGE_FAULT_OFFSET);
+	SetIDTEntryOffset(SystemTable, idt_entry, (UINT32*)PageFaultHandler, IDT_TYPE, cs);
 
 	BOOLEAN done = FALSE;
 	while(!done)
