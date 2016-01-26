@@ -7,7 +7,9 @@
   ENTRY_POINT                    = UefiMain
 
 [Sources]
+  Main.c
   Paging.c
+  Menu.c
   EnablePaging.S
   GetIDTR.S
   GetCR2.S
