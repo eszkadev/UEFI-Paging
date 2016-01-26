@@ -81,7 +81,7 @@ UINT8 ParseCommand( IN CHAR16* String )
 {
 	if(StrnCmp(String, L"help", 4) == 0)
 		return HELP;
-	else if(StrnCmp(String, L"writeb", 5) == 0)
+	else if(StrnCmp(String, L"write", 5) == 0)
 		return WRITEB;
 	else if(StrnCmp(String, L"read", 4) == 0)
 		return READ;
@@ -205,15 +205,15 @@ VOID Map( IN EFI_SYSTEM_TABLE *SystemTable )
 	UINT32 address1 = 0;
 	UINT32 address2 = 0;
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"adres (z) {hex}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"adres (linear) {hex}: ");
 	ReadWord(SystemTable, SIZE, String);
 	address1 = StrHexToUint64(String);
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nadres (na) {hex}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nadres (phys) {hex}: ");
 	ReadWord(SystemTable, SIZE, String);
 	address2 = StrHexToUint64(String);
 
-	UnicodeSPrint(String, SIZE, L"\nMapowanie z %x na %x \r\n", address1, address2);
+	UnicodeSPrint(String, SIZE, L"\nMapping: %x -> %x \r\n", address1, address2);
 	SystemTable->ConOut->OutputString(SystemTable->ConOut, String);
 
 	MapAddress(address1, address2, FLAGS, (UINT32*)DIRECTORY_START);
@@ -224,15 +224,15 @@ VOID Read( IN EFI_SYSTEM_TABLE *SystemTable )
 	UINT32 address = 0;
 	UINT32 count = 0;
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"adres {hex}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"address {hex}: ");
 	ReadWord(SystemTable, SIZE, String);
 	address = StrHexToUint64(String);
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nilosc bajtow {dec}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nbytes count {dec}: ");
 	ReadWord(SystemTable, SIZE, String);
 	count = StrDecimalToUint64(String);
 
-	UnicodeSPrint(String, SIZE, L"\nCzytanie z %x, %d bajtow:\r\n", address, count);
+	UnicodeSPrint(String, SIZE, L"\nReading form %x, %d bytes:\r\n", address, count);
 	SystemTable->ConOut->OutputString(SystemTable->ConOut, String);
 
 	PrintBytes(SystemTable, (UINT8*)address, count);
@@ -242,7 +242,7 @@ VOID NotPresent( IN EFI_SYSTEM_TABLE *SystemTable )
 {
 	UINT32 address = 0;
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"adres {hex}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"address {hex}: ");
 	ReadWord(SystemTable, SIZE, String);
 	address = StrHexToUint64(String);
 
@@ -258,11 +258,11 @@ VOID WriteB( IN EFI_SYSTEM_TABLE *SystemTable )
 	UINT32 i;
 	UINT8 x;
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"adres {hex}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"address {hex}: ");
 	ReadWord(SystemTable, SIZE, String);
 	address = StrHexToUint64(String);
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nilosc bajtow {dec}: ");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"\nbytes count {dec}: ");
 	ReadWord(SystemTable, SIZE, String);
 	count = StrDecimalToUint64(String);
 
@@ -276,7 +276,7 @@ VOID WriteB( IN EFI_SYSTEM_TABLE *SystemTable )
 		address++;
 	}
 
-	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Wpisano:\n\r");
+	SystemTable->ConOut->OutputString(SystemTable->ConOut, L"Bytes written:\n\r");
 
 	PrintBytes(SystemTable, (UINT8*)(address - count), count);
 }
